@@ -108,6 +108,23 @@ export class UpdateCheckoutProcessorDto {
   checkoutProcessor: CheckoutProcessor;
 }
 
+export class UpdateProcessorSplitDto {
+  @ApiProperty({
+    description:
+      'Percentage split across processors. Must sum to 100. Example: { stripe: 70, NMI: 30 }',
+    example: { stripe: 70, NMI: 30 },
+  })
+  processorSplit: Record<string, number>;
+}
+
+export class ProcessorSplitDto {
+  @ApiProperty({
+    description: 'Current processor split configuration',
+    example: { stripe: 70, NMI: 30 },
+  })
+  processorSplit: Record<string, number>;
+}
+
 export class SubscriptionSettingsDto {
   @ApiProperty({ enum: ['monthly', 'weekly', 'yearly'], example: 'monthly' })
   frequency: 'monthly' | 'weekly' | 'yearly';

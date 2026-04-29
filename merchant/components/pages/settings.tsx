@@ -8,6 +8,7 @@ import {
   updateIntegrationApi,
   fetchCheckoutProcessor,
   updateCheckoutProcessor,
+  updateProcessorSplit,
   type CheckoutProcessor,
 } from "@/lib/api"
 import { statusColor, humanizeKey } from "@/lib/utils"
@@ -39,6 +40,9 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [processor, setProcessor] = useState<string>("")
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [useSplit, setUseSplit] = useState(false)
+  const [stripeSplit, setStripeSplit] = useState(50)
+  const [nmiSplit, setNmiSplit] = useState(50)
 
   useEffect(() => {
     if (!accessToken) return
@@ -106,6 +110,79 @@ export function SettingsPage() {
             <SelectItem value="NMI">NMI</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Processor Split
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Route checkout traffic across multiple processors by percentage
+            </p>
+          </div>
+          <Switch checked={useSplit} onCheckedChange={setUseSplit} />
+        </div>
+        {useSplit && (
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Stripe</Label>
+                  <span className="text-sm font-medium">{stripeSplit}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={stripeSplit}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value)
+                    setStripeSplit(val)
+                    setNmiSplit(100 - val)
+                  }}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>NMI</Label>
+                  <span className="text-sm font-medium">{nmiSplit}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={nmiSplit}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value)
+                    setNmiSplit(val)
+                    setStripeSplit(100 - val)
+                  }}
+                  className="w-full"
+                />
+              </div>
+              <Button
+                className="w-full"
+                size="sm"
+                onClick={async () => {
+                  if (!accessToken) return
+                  try {
+                    await updateProcessorSplit(accessToken, {
+                      stripe: stripeSplit,
+                      NMI: nmiSplit,
+                    })
+                  } catch (err) {
+                    console.error("Failed to update processor split:", err)
+                  }
+                }}
+              >
+                Save Split Configuration
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Separator />
