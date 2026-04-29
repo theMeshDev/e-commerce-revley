@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
-  NotImplementedException,
   Param,
+  ParseIntPipe,
   Patch,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -19,11 +21,13 @@ import type { RequestWithUser } from '../auth/types';
 import {
   CheckoutProcessorDto,
   IntegrationDto,
+  ProcessorSplitDto,
   StoreSettingsDto,
   SubscriptionDto,
   TransactionDto,
   UpdateCheckoutProcessorDto,
   UpdateIntegrationDto,
+  UpdateProcessorSplitDto,
 } from './merchant.dto';
 import { MerchantService } from './merchant.service';
 
@@ -88,6 +92,26 @@ export class MerchantController {
   }
 
   /**
+   * Update the processor split configuration for the merchant's store.
+   */
+  @Patch('processor-split')
+  @ApiOperation({
+    summary: 'Update processor split',
+    description:
+      'Configure percentage-based routing across payment processors. ' +
+      'Percentages must sum to 100. Example: { stripe: 70, NMI: 30 }',
+  })
+  @ApiResponse({ status: 200, type: ProcessorSplitDto })
+  @ApiResponse({ status: 400, description: 'Invalid split configuration' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  updateProcessorSplit(
+    @Request() req: RequestWithUser,
+    @Body() dto: UpdateProcessorSplitDto,
+  ): Promise<ProcessorSplitDto> {
+    return this.merchantService.updateProcessorSplit(req.user!.storeId, dto);
+  }
+
+  /**
    * Return all transactions for the authenticated merchant's store.
    */
   @Get('transactions')
@@ -95,13 +119,16 @@ export class MerchantController {
     summary: 'List transactions',
     description:
       "Returns all transactions for the merchant's store, " +
-      'joined with customer data. Requires authentication.',
+      'joined with customer data. Requires authentication. Supports pagination.',
   })
   @ApiResponse({ status: 200, type: [TransactionDto] })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 501, description: 'Not implemented' })
-  getTransactions(@Request() _req: RequestWithUser): TransactionDto[] {
-    throw new NotImplementedException('merchant/transactions');
+  getTransactions(
+    @Request() req: RequestWithUser,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+  ): Promise<TransactionDto[]> {
+    return this.merchantService.getTransactions(req.user!.storeId, limit, offset);
   }
 
   /**
@@ -112,13 +139,16 @@ export class MerchantController {
     summary: 'List subscriptions',
     description:
       "Returns all active and inactive subscriptions for the merchant's store. " +
-      'Requires authentication.',
+      'Requires authentication. Supports pagination.',
   })
   @ApiResponse({ status: 200, type: [SubscriptionDto] })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 501, description: 'Not implemented' })
-  getSubscriptions(@Request() _req: RequestWithUser): SubscriptionDto[] {
-    throw new NotImplementedException('merchant/subscriptions');
+  getSubscriptions(
+    @Request() req: RequestWithUser,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+  ): Promise<SubscriptionDto[]> {
+    return this.merchantService.getSubscriptions(req.user!.storeId, limit, offset);
   }
 
   /**
@@ -133,8 +163,7 @@ export class MerchantController {
   })
   @ApiResponse({ status: 200, type: StoreSettingsDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 501, description: 'Not implemented' })
-  getStoreSettings(@Request() _req: RequestWithUser): StoreSettingsDto {
-    throw new NotImplementedException('merchant/store-settings');
+  getStoreSettings(@Request() req: RequestWithUser): Promise<StoreSettingsDto> {
+    return this.merchantService.getStoreSettings(req.user!.storeId);
   }
 }

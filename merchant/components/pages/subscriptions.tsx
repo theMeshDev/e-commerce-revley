@@ -1,6 +1,8 @@
 "use client"
 
-import { subscriptions } from "@/lib/mock-data"
+import { useState, useEffect } from "react"
+import { fetchSubscriptions, type Subscription } from "@/lib/api"
+import { useAuth } from "@/lib/auth"
 import { statusColor, formatDate } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -13,6 +15,18 @@ import {
 } from "@/components/ui/table"
 
 export function SubscriptionsPage() {
+  const { accessToken } = useAuth()
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!accessToken) return
+    fetchSubscriptions(accessToken)
+      .then(setSubscriptions)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [accessToken])
+
   return (
     <div className="space-y-6">
       <div>
@@ -25,7 +39,7 @@ export function SubscriptionsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Customer</TableHead>
+              <TableHead>Customer ID</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Processor</TableHead>
@@ -33,9 +47,25 @@ export function SubscriptionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {subscriptions.map((sub) => (
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  Loading subscriptions...
+                </TableCell>
+              </TableRow>
+            )}
+            {!loading && subscriptions.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  No subscriptions found
+                </TableCell>
+              </TableRow>
+            )}
+            {!loading && subscriptions.map((sub) => (
               <TableRow key={sub.id}>
-                <TableCell className="font-medium">{sub.customer}</TableCell>
+                <TableCell className="font-medium font-mono text-xs">
+                  {sub.customer_id.slice(0, 8)}...
+                </TableCell>
                 <TableCell className="text-right tabular-nums">
                   ${sub.amount.toFixed(2)}
                 </TableCell>
@@ -52,7 +82,7 @@ export function SubscriptionsPage() {
                   {sub.processor}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {formatDate(sub.nextBillingDate)}
+                  {formatDate(sub.next_billing_date)}
                 </TableCell>
               </TableRow>
             ))}

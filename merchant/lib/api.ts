@@ -89,3 +89,60 @@ export async function updateIntegrationApi(
   )
   return toIntegration(data)
 }
+
+export async function updateProcessorSplit(
+  token: string,
+  processorSplit: Record<string, number>,
+): Promise<Record<string, number>> {
+  const data = await apiFetch<{ processorSplit: Record<string, number> }>(
+    "/merchant/processor-split",
+    token,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ processorSplit }),
+    },
+  )
+  return data.processorSplit
+}
+
+export type Transaction = {
+  id: string
+  customer_id: string
+  amount: number
+  type: "sale" | "recurring"
+  state: "captured" | "failed" | "auth" | "pending"
+  processor: CheckoutProcessor
+  created_at: string
+}
+
+export type Subscription = {
+  id: string
+  customer_id: string
+  amount: number
+  status: "active" | "inactive"
+  processor: CheckoutProcessor
+  next_billing_date: string
+  created_at: string
+}
+
+export async function fetchTransactions(
+  token: string,
+  limit = 50,
+  offset = 0,
+): Promise<Transaction[]> {
+  return apiFetch<Transaction[]>(
+    `/merchant/transactions?limit=${limit}&offset=${offset}`,
+    token,
+  )
+}
+
+export async function fetchSubscriptions(
+  token: string,
+  limit = 50,
+  offset = 0,
+): Promise<Subscription[]> {
+  return apiFetch<Subscription[]>(
+    `/merchant/subscriptions?limit=${limit}&offset=${offset}`,
+    token,
+  )
+}
