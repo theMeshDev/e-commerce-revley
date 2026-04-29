@@ -110,10 +110,39 @@ export default function CheckoutPage() {
     }
     setIsSubmitting(true)
 
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+      const response = await fetch(`${API_URL}/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email,
+          phone: form.phone || undefined,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          address: form.address,
+          apartment: form.apartment || undefined,
+          city: form.city,
+          state: form.state,
+          zip: form.zip,
+          cardNumber: form.cardNumber.replace(/\s/g, ''),
+          expiry: form.expiry,
+          cvv: form.cvv,
+          isSubscription,
+        }),
+      })
 
-    router.push("/success")
+      if (!response.ok) {
+        throw new Error('Checkout failed')
+      }
+
+      await response.json()
+      router.push("/success")
+    } catch (error) {
+      console.error('Checkout error:', error)
+      setErrors({ submit: 'Checkout failed. Please try again.' })
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -397,6 +426,13 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               </section>
+
+              {/* Submit Error */}
+              {errors.submit && (
+                <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {errors.submit}
+                </div>
+              )}
 
               {/* Submit */}
               <Button

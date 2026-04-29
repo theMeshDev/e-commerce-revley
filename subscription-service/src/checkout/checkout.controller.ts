@@ -1,15 +1,13 @@
-import {
-  Body,
-  Controller,
-  NotImplementedException,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CheckoutDto, CheckoutResponseDto } from './checkout.dto';
+import { CheckoutService } from './checkout.service';
 
 @ApiTags('Checkout')
 @Controller('checkout')
 export class CheckoutController {
+  constructor(private readonly checkoutService: CheckoutService) {}
+
   /**
    * Process a checkout. Determines which payment processor to use based on the
    * merchant's active integration config, creates a transaction record, and
@@ -25,8 +23,8 @@ export class CheckoutController {
       'recurring billing via EventBridge.',
   })
   @ApiResponse({ status: 201, type: CheckoutResponseDto })
-  @ApiResponse({ status: 501, description: 'Not implemented' })
-  checkout(@Body() _dto: CheckoutDto): CheckoutResponseDto {
-    throw new NotImplementedException('checkout');
+  @ApiResponse({ status: 400, description: 'Invalid card or checkout failed' })
+  checkout(@Body() dto: CheckoutDto): Promise<CheckoutResponseDto> {
+    return this.checkoutService.processCheckout(dto);
   }
 }

@@ -1,19 +1,17 @@
-import {
-  Body,
-  Controller,
-  NotImplementedException,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   EventBridgeWebhookDto,
   NmiWebhookDto,
   StripeWebhookDto,
 } from './webhooks.dto';
+import { WebhooksService } from './webhooks.service';
 
 @ApiTags('Webhooks')
 @Controller('webhooks')
 export class WebhooksController {
+  constructor(private readonly webhooksService: WebhooksService) {}
+
   /**
    * Stripe sends async charge / capture results here.
    */
@@ -25,9 +23,8 @@ export class WebhooksController {
       'payment_intent.succeeded, etc.) and updates transaction state.',
   })
   @ApiResponse({ status: 200, description: 'Acknowledged' })
-  @ApiResponse({ status: 501, description: 'Not implemented' })
-  stripeWebhook(@Body() _dto: StripeWebhookDto): void {
-    throw new NotImplementedException('webhooks/stripe');
+  async stripeWebhook(@Body() dto: StripeWebhookDto): Promise<void> {
+    await this.webhooksService.handleStripeWebhook(dto);
   }
 
   /**
@@ -41,9 +38,8 @@ export class WebhooksController {
       'and updates transaction / payment method state.',
   })
   @ApiResponse({ status: 200, description: 'Acknowledged' })
-  @ApiResponse({ status: 501, description: 'Not implemented' })
-  nmiWebhook(@Body() _dto: NmiWebhookDto): void {
-    throw new NotImplementedException('webhooks/nmi');
+  async nmiWebhook(@Body() dto: NmiWebhookDto): Promise<void> {
+    await this.webhooksService.handleNmiWebhook(dto);
   }
 
   /**
@@ -57,8 +53,7 @@ export class WebhooksController {
       'Looks up the subscription, re-charges the customer, and records the transaction.',
   })
   @ApiResponse({ status: 200, description: 'Acknowledged' })
-  @ApiResponse({ status: 501, description: 'Not implemented' })
-  eventBridgeWebhook(@Body() _dto: EventBridgeWebhookDto): void {
-    throw new NotImplementedException('webhooks/eventbridge');
+  async eventBridgeWebhook(@Body() dto: EventBridgeWebhookDto): Promise<void> {
+    await this.webhooksService.handleEventBridgeWebhook(dto);
   }
 }
